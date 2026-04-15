@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weekly Operations Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F7F6F2;
+  --surface: #FFFFFF;
+  --surface2: #F0EFE9;
+  --border: rgba(0,0,0,0.08);
+  --border-med: rgba(0,0,0,0.14);
+  --text: #1A1916;
+  --text2: #6B6A64;
+  --text3: #9E9D97;
+  --green: #2D6A4F; --green-bg: #D8F3DC; --green-light: #F0FAF2;
+  --amber: #7B4F12; --amber-bg: #FDEBC8; --amber-light: #FEF6E7;
+  --red: #7B1F1F; --red-bg: #FADADD; --red-light: #FDF0F1;
+  --blue: #1A3A5C; --blue-bg: #D6EAF8; --blue-light: #EBF5FB;
+  --accent: #1A1916;
+  --radius: 10px; --radius-lg: 16px;
+  --font: 'DM Sans', sans-serif;
+  --mono: 'DM Mono', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; min-height: 100vh; }
+.page { display: none; min-height: 100vh; }
+.page.active { display: block; }
+.container { max-width: 860px; margin: 0 auto; padding: 2rem 1.25rem; }
+.container-wide { max-width: 1080px; margin: 0 auto; padding: 2rem 1.25rem; }
+
+/* Typography */
+h1 { font-size: 22px; font-weight: 500; letter-spacing: -0.3px; }
+h2 { font-size: 17px; font-weight: 500; letter-spacing: -0.2px; }
+h3 { font-size: 13px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text2); }
+.mono { font-family: var(--mono); }
+
+/* Cards & surfaces */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; margin-bottom: 14px; }
+.surface { background: var(--surface2); border-radius: var(--radius); padding: 1rem 1.25rem; }
+.section-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text3); margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+
+/* Buttons */
+button { font-family: var(--font); cursor: pointer; border: none; transition: all 0.15s; }
+.btn { padding: 9px 20px; border-radius: var(--radius); font-size: 13px; font-weight: 500; border: 1px solid var(--border-med); background: var(--surface); color: var(--text); }
+.btn:hover { background: var(--surface2); }
+.btn:active { transform: scale(0.98); }
+.btn-primary { background: var(--text); color: var(--surface); border-color: var(--text); }
+.btn-primary:hover { opacity: 0.88; background: var(--text); }
+.btn-sm { padding: 6px 14px; font-size: 12px; border-radius: 8px; }
+.btn-danger { background: var(--red-bg); color: var(--red); border-color: transparent; }
+
+/* Forms */
+label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 4px; font-weight: 500; }
+input[type="text"], input[type="email"], input[type="number"], input[type="date"], input[type="password"], textarea, select {
+  width: 100%; padding: 9px 12px; border: 1px solid var(--border-med); border-radius: var(--radius);
+  background: var(--surface); color: var(--text); font-size: 13px; font-family: var(--font);
+  transition: border-color 0.15s;
+}
+input:focus, textarea:focus, select:focus { outline: none; border-color: var(--text); }
+textarea { resize: vertical; min-height: 64px; line-height: 1.6; }
+.frow { margin-bottom: 14px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+@media(max-width:600px) { .grid-3,.grid-4 { grid-template-columns: 1fr 1fr; } .grid-2 { grid-template-columns: 1fr; } }
+
+/* Badges */
+.badge { display: inline-block; font-size: 11px; font-weight: 500; padding: 2px 10px; border-radius: 999px; font-family: var(--mono); }
+.badge-green { background: var(--green-bg); color: var(--green); }
+.badge-amber { background: var(--amber-bg); color: var(--amber); }
+.badge-red { background: var(--red-bg); color: var(--red); }
+.badge-blue { background: var(--blue-bg); color: var(--blue); }
+.badge-gray { background: var(--surface2); color: var(--text2); }
+
+/* Metric cards */
+.mcard { background: var(--surface2); border-radius: var(--radius); padding: 14px 16px; }
+.mcard .ml { font-size: 11px; color: var(--text3); margin-bottom: 4px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+.mcard .mv { font-size: 26px; font-weight: 300; font-family: var(--mono); letter-spacing: -1px; }
+.mcard .ms { font-size: 11px; color: var(--text3); margin-top: 3px; }
+
+/* Nav / tabs */
+.nav { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem; }
+.nav-item { padding: 9px 16px; background: none; border: none; border-bottom: 2px solid transparent; font-size: 13px; font-weight: 500; color: var(--text2); cursor: pointer; border-radius: 0; margin-bottom: -1px; }
+.nav-item:hover { color: var(--text); background: none; }
+.nav-item.on { color: var(--text); border-bottom-color: var(--text); }
+
+/* Manager cards */
+.mgr-card { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px; margin-bottom: 10px; cursor: pointer; transition: all 0.15s; }
+.mgr-card:hover { border-color: var(--border-med); background: var(--surface2); }
+.avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 500; flex-shrink: 0; font-family: var(--mono); }
+.av-green { background: var(--green-bg); color: var(--green); }
+.av-amber { background: var(--amber-bg); color: var(--amber); }
+.av-red { background: var(--red-bg); color: var(--red); }
+
+/* Score bar */
+.score-bar-track { height: 4px; background: var(--surface2); border-radius: 2px; overflow: hidden; width: 100%; margin-top: 10px; }
+.score-bar-fill { height: 4px; border-radius: 2px; transition: width 0.4s ease; }
+
+/* Pills */
+.pill { display: inline-block; font-size: 11px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border-med); color: var(--text2); margin: 3px 3px 3px 0; }
+.pill-pos { background: var(--green-light); color: var(--green); border-color: #A8D5B5; }
+.pill-neg { background: var(--red-light); color: var(--red); border-color: #F1B8BC; }
+
+/* KPI grid rows */
+.kpi-grid-hdr { display: grid; grid-template-columns: 160px 80px 80px 1fr; gap: 10px; font-size: 11px; color: var(--text3); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; padding-bottom: 6px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+.kpi-grid-row { display: grid; grid-template-columns: 160px 80px 80px 1fr; gap: 10px; align-items: center; margin-bottom: 8px; }
+.li-grid-hdr { display: grid; grid-template-columns: 80px 1fr 1fr 110px; gap: 10px; font-size: 11px; color: var(--text3); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; padding-bottom: 6px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+.li-grid-row { display: grid; grid-template-columns: 80px 1fr 1fr 110px; gap: 10px; align-items: start; margin-bottom: 8px; }
+@media(max-width:600px) { .kpi-grid-hdr,.kpi-grid-row,.li-grid-hdr,.li-grid-row { grid-template-columns: 1fr 1fr; } }
+
+/* Radio */
+.radio-row { display: flex; gap: 18px; }
+.radio-row label { display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text); font-size: 13px; margin: 0; font-weight: 400; }
+
+/* Toast */
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--text); color: #fff; padding: 12px 24px; border-radius: var(--radius); font-size: 13px; font-weight: 500; z-index: 999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+.toast.show { opacity: 1; }
+
+/* Login page */
+.login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+.login-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 2.5rem; width: 100%; max-width: 400px; }
+.role-card { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; margin-bottom: 10px; cursor: pointer; transition: all 0.15s; }
+.role-card:hover { border-color: var(--text); background: var(--surface2); }
+.role-card h2 { font-size: 15px; font-weight: 500; margin-bottom: 3px; }
+.role-card p { font-size: 12px; color: var(--text2); }
+
+/* Notification item */
+.notif-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.notif-row:last-child { border-bottom: none; }
+
+/* Chart legend */
+.chart-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 10px; }
+.chart-legend span { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text2); }
+.legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+
+/* Email manager */
+.email-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.email-row:last-child { border-bottom: none; }
+.status-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.dot-green { background: var(--green); }
+.dot-amber { background: #D97706; }
+.dot-red { background: #DC2626; }
+
+/* Topbar */
+.topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 1.25rem; display: flex; align-items: center; justify-content: space-between; height: 54px; position: sticky; top: 0; z-index: 10; }
+.topbar-brand { font-size: 14px; font-weight: 500; font-family: var(--mono); letter-spacing: -0.3px; }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+
+/* Spinner */
+.spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border-med); border-top-color: var(--text); border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 6px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Loading overlay */
+.loading-overlay { display: flex; align-items: center; justify-content: center; padding: 3rem; color: var(--text2); font-size: 13px; }
+
+/* Collapsible detail sections */
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media(max-width:600px){ .detail-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════ LOGIN PAGE -->
+<div id="pg-login" class="page active">
+  <div class="login-wrap">
+    <div class="login-card">
+      <div style="margin-bottom:1.75rem">
+        <div style="font-family:var(--mono);font-size:12px;color:var(--text3);margin-bottom:6px;letter-spacing:0.08em">OPERATIONS</div>
+        <h1>Weekly tracker</h1>
+        <p style="font-size:13px;color:var(--text2);margin-top:4px">Select your role to continue</p>
+      </div>
+      <div class="role-card" onclick="enterManager()">
+        <h2>Manager</h2>
+        <p>Submit your weekly operations report</p>
+      </div>
+      <div class="role-card" onclick="showPinEntry()">
+        <h2>Senior leadership</h2>
+        <p>View dashboard and team performance</p>
+      </div>
+      <div id="pin-area" style="display:none;margin-top:14px">
+        <div class="frow"><label>Leadership PIN</label><input type="password" id="pin-input" placeholder="Enter PIN" onkeydown="if(event.key==='Enter')checkPin()"></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" onclick="checkPin()">Continue</button>
+          <button class="btn" onclick="hidePinEntry()">Cancel</button>
+        </div>
+        <p id="pin-err" style="display:none;font-size:12px;color:var(--red);margin-top:8px">Incorrect PIN.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ MANAGER FORM PAGE -->
+<div id="pg-manager" class="page">
+  <div class="topbar">
+    <div class="topbar-brand">WK TRACKER</div>
+    <div class="topbar-right">
+      <button class="btn btn-sm" onclick="showPage('login')">Exit</button>
+    </div>
+  </div>
+  <div class="container">
+    <div style="margin-bottom:1.5rem;margin-top:0.5rem">
+      <h1>Weekly report</h1>
+      <p style="font-size:13px;color:var(--text2);margin-top:3px">Complete all sections and save your report</p>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Your details</div>
+      <div class="grid-3">
+        <div class="frow"><label>Full name *</label><input type="text" id="m-name" placeholder="Your name"></div>
+        <div class="frow"><label>Email address *</label><input type="email" id="m-email" placeholder="you@company.com"></div>
+        <div class="frow"><label>Section / BU *</label><input type="text" id="m-section" placeholder="e.g. Assembly A"></div>
+      </div>
+      <div class="frow" style="max-width:200px"><label>Week ending *</label><input type="date" id="m-week"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">KPIs</div>
+      <div class="kpi-grid-hdr"><span>Metric</span><span>Target</span><span>Actual</span><span>Notes</span></div>
+      <div class="kpi-grid-row"><span style="font-size:13px">Efficiency %</span><span style="font-size:12px;color:var(--text3)">80–85%</span><input type="number" id="k-eff" min="0" max="100" placeholder="0"><input type="text" id="k-eff-n" placeholder="Notes"></div>
+      <div class="kpi-grid-row"><span style="font-size:13px">WIP per station</span><span style="font-size:12px;color:var(--text3)">≤2</span><input type="number" id="k-wip" min="0" step="0.1" placeholder="0"><input type="text" id="k-wip-n" placeholder="Notes"></div>
+      <div class="kpi-grid-row"><span style="font-size:13px">Defect rate %</span><span style="font-size:12px;color:var(--text3)">minimize</span><input type="number" id="k-def" min="0" max="100" step="0.1" placeholder="0"><input type="text" id="k-def-n" placeholder="Notes"></div>
+      <div class="kpi-grid-row"><span style="font-size:13px">On-time delivery %</span><span style="font-size:12px;color:var(--text3)">95%</span><input type="number" id="k-otd" min="0" max="100" placeholder="0"><input type="text" id="k-otd-n" placeholder="Notes"></div>
+      <div class="kpi-grid-row" style="grid-template-columns:160px 1fr 1fr 1fr"><span style="font-size:13px">Deliveries</span><input type="number" id="k-del-p" placeholder="Planned"><input type="number" id="k-del-a" placeholder="Actual"><span></span></div>
+      <div class="kpi-grid-row" style="grid-template-columns:160px 1fr 1fr 1fr"><span style="font-size:13px">BPS submissions</span><input type="number" id="k-bps-p" placeholder="Planned"><input type="number" id="k-bps-a" placeholder="Actual"><span></span></div>
+      <div class="kpi-grid-row" style="grid-template-columns:160px 1fr 1fr 1fr"><span style="font-size:13px">Focused meetings</span><input type="number" id="k-mtg-p" placeholder="Planned"><input type="number" id="k-mtg-a" placeholder="Actual"><span></span></div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Line issues</div>
+      <div class="li-grid-hdr"><span>Line</span><span>Key issue</span><span>Action taken</span><span>Status</span></div>
+      <div id="li-rows"></div>
+      <button class="btn btn-sm" onclick="addLI()" style="margin-top:4px">+ Add line</button>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Line balancing & WIP control</div>
+      <div class="frow"><label>Observed bottlenecks</label><textarea id="m-bottleneck" placeholder="Describe observed bottlenecks..."></textarea></div>
+      <div class="frow"><label>Actions taken to balance line</label><textarea id="m-bal-action" placeholder="What was done..."></textarea></div>
+      <div class="frow"><label>Results achieved</label><textarea id="m-bal-result" placeholder="Outcomes observed..."></textarea></div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Leadership & team engagement</div>
+      <div class="frow"><label>Morning huddles conducted</label><div class="radio-row"><label><input type="radio" name="huddles" value="yes"> Yes</label><label><input type="radio" name="huddles" value="no"> No</label></div></div>
+      <div class="frow"><label>Focused meeting topics & outcomes</label><textarea id="m-mtg-detail" placeholder="Topics covered, decisions made, outcomes..."></textarea></div>
+      <div class="frow"><label>Key operator issues raised</label><textarea id="m-op-issues" placeholder="Issues raised by team members..."></textarea></div>
+      <div class="frow"><label>Coaching provided to module leaders/operators</label><textarea id="m-coaching" placeholder="Who was coached and on what..."></textarea></div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Continuous improvement</div>
+      <div class="frow"><label>Problems solved this week (tools used)</label><textarea id="m-ci-prob" placeholder="5 Whys, fishbone, etc. — describe the problem and approach..."></textarea></div>
+      <div class="frow"><label>Improvement actions implemented</label><textarea id="m-ci-action" placeholder="What was changed or implemented..."></textarea></div>
+      <div class="frow"><label>Impact observed</label><textarea id="m-ci-impact" placeholder="Measurable results seen..."></textarea></div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">People / HR challenges</div>
+      <div class="frow"><label>Challenges encountered (absenteeism, conflict, morale, turnover)</label><textarea id="m-hr-chall" placeholder="Describe the challenge..."></textarea></div>
+      <div class="frow"><label>Actions taken to resolve</label><textarea id="m-hr-action" placeholder="Steps taken..."></textarea></div>
+      <div class="frow"><label>Follow-up required</label><textarea id="m-hr-followup" placeholder="What still needs attention..."></textarea></div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Escalation & support needs</div>
+      <div class="frow"><label>Required assistance or support this week?</label><div class="radio-row"><label><input type="radio" name="esc" value="yes"> Yes</label><label><input type="radio" name="esc" value="no"> No</label></div></div>
+      <div class="frow"><label>Issue that required support & outcome</label><textarea id="m-esc-detail" placeholder="Issue, who it was reported to, outcome..."></textarea></div>
+      <div class="frow"><label>Additional support needed from senior management</label><textarea id="m-esc-support" placeholder="What is still needed..."></textarea></div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Reflection & next steps</div>
+      <div class="frow"><label>What worked well this week</label><textarea id="m-well" placeholder="Highlights and wins..."></textarea></div>
+      <div class="frow"><label>Challenges faced</label><textarea id="m-challenges" placeholder="What was difficult..."></textarea></div>
+      <div class="frow"><label>Plan for next week</label><textarea id="m-plan" placeholder="Priorities and planned actions..."></textarea></div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;gap:10px;padding:0.5rem 0 3rem">
+      <button class="btn" onclick="showPage('login')">Cancel</button>
+      <button class="btn btn-primary" id="submit-btn" onclick="submitEntry()">Save report</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ DASHBOARD PAGE -->
+<div id="pg-dashboard" class="page">
+  <div class="topbar">
+    <div class="topbar-brand">WK TRACKER — LEADERSHIP</div>
+    <div class="topbar-right">
+      <button class="btn btn-sm" onclick="showPage('login')">Sign out</button>
+    </div>
+  </div>
+  <div class="container-wide">
+    <div style="margin-bottom:1.25rem;margin-top:0.5rem;display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:10px">
+      <div><h1>Team dashboard</h1><p style="font-size:13px;color:var(--text2);margin-top:3px">Operations weekly performance overview</p></div>
+    </div>
+
+    <div class="nav">
+      <button class="nav-item on" onclick="dashTab('overview')" id="dt-overview">Overview</button>
+      <button class="nav-item" onclick="dashTab('managers')" id="dt-managers">Managers</button>
+      <button class="nav-item" onclick="dashTab('notifications')" id="dt-notifications">Notifications</button>
+    </div>
+
+    <!-- OVERVIEW TAB -->
+    <div id="dv-overview">
+      <div class="grid-4" id="overview-cards" style="margin-bottom:1.5rem"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:1.5rem">
+        <div class="card" style="margin-bottom:0">
+          <div class="section-label" style="margin-bottom:10px">Competency scores</div>
+          <div class="chart-legend" id="comp-legend"></div>
+          <div style="position:relative;width:100%;height:220px"><canvas id="compChart" role="img" aria-label="Competency scores per manager"></canvas></div>
+        </div>
+        <div class="card" style="margin-bottom:0">
+          <div class="section-label" style="margin-bottom:10px">KPI averages vs targets</div>
+          <div style="position:relative;width:100%;height:250px"><canvas id="kpiChart" role="img" aria-label="Team KPI averages vs targets"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-label">Recurring issues across team</div>
+        <div id="issues-list" style="margin-top:6px"></div>
+      </div>
+    </div>
+
+    <!-- MANAGERS TAB -->
+    <div id="dv-managers" style="display:none">
+      <div id="mgr-list-view">
+        <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">
+          <select id="mgr-filter" style="width:auto" onchange="renderManagers()">
+            <option value="all">All managers</option>
+            <option value="achieving">Achieving</option>
+            <option value="developing">Developing</option>
+            <option value="needs-support">Needs support</option>
+          </select>
+          <select id="mgr-sort" style="width:auto" onchange="renderManagers()">
+            <option value="score-desc">Highest score first</option>
+            <option value="score-asc">Lowest score first</option>
+            <option value="name">Name A–Z</option>
+          </select>
+        </div>
+        <div id="mgr-list"></div>
+      </div>
+      <div id="mgr-detail-view" style="display:none"></div>
+    </div>
+
+    <!-- NOTIFICATIONS TAB -->
+    <div id="dv-notifications" style="display:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
+        <div>
+          <div class="card">
+            <div class="section-label">Notification settings</div>
+            <div class="grid-2">
+              <div class="frow"><label>Reminder day</label>
+                <select id="notif-day"><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4" selected>Thursday</option><option value="5">Friday</option></select>
+              </div>
+              <div class="frow"><label>Reminder time</label>
+                <select id="notif-time"><option>07:00</option><option>08:00</option><option selected>09:00</option><option>10:00</option><option>12:00</option></select>
+              </div>
+              <div class="frow"><label>Report due day</label>
+                <select id="due-day"><option value="4">Thursday</option><option value="5" selected>Friday</option><option value="1">Monday</option></select>
+              </div>
+            </div>
+            <div class="frow"><label>Leadership email (receives late alerts)</label><input type="email" id="lead-email" placeholder="leadership@company.com"></div>
+            <button class="btn btn-primary btn-sm" onclick="saveNotifSettings()">Save settings</button>
+            <p id="notif-saved" style="display:none;font-size:12px;color:var(--green);margin-top:8px">Settings saved.</p>
+          </div>
+
+          <div class="card">
+            <div class="section-label">Email preview — reminder</div>
+            <div class="surface" style="font-size:12px;line-height:1.8;color:var(--text2)">
+              <div style="font-weight:500;color:var(--text);margin-bottom:6px">Subject: Reminder — weekly ops report due Friday</div>
+              <div>Hi [Manager name],</div>
+              <div style="margin-top:6px">Your weekly operations report is due <strong>Friday</strong>. Please complete all sections including KPIs, line issues, and your reflection.</div>
+              <div style="margin-top:6px">Submit here: <span style="color:var(--blue)">[tracker link]</span></div>
+              <div style="margin-top:10px;color:var(--text3)">— Operations leadership</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card">
+            <div class="section-label" style="margin-bottom:12px">Manager email list</div>
+            <div style="display:flex;gap:8px;margin-bottom:14px">
+              <input type="text" id="new-mgr-name" placeholder="Manager name" style="flex:1">
+              <input type="email" id="new-mgr-email" placeholder="Email address" style="flex:1.4">
+              <button class="btn btn-sm btn-primary" onclick="addManagerEmail()">Add</button>
+            </div>
+            <div id="mgr-email-list"></div>
+          </div>
+          <div class="card">
+            <div class="section-label" style="margin-bottom:12px">Submission status — current week</div>
+            <div id="submission-status"></div>
+            <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-sm btn-primary" id="send-reminder-btn" onclick="sendReminderAll()">Send reminder to all</button>
+              <button class="btn btn-sm" id="send-late-btn" onclick="sendLateAlert()">Send late alert to overdue</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+// ─── CONFIG — replace with your Supabase project values ───────────────────────
+const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const LEADERSHIP_PIN = 'YOUR_PIN'; // change this to your chosen PIN
+const APP_URL = window.location.href.split('?')[0];
+// ──────────────────────────────────────────────────────────────────────────────
+
+const headers = { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY };
+
+async function dbGet(table, query='') {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${query}&order=created_at.desc`, { headers });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+async function dbInsert(table, data) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, { method: 'POST', headers: { ...headers, 'Prefer': 'return=representation' }, body: JSON.stringify(data) });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+async function dbDelete(table, id) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, { method: 'DELETE', headers });
+  if (!res.ok) throw new Error(await res.text());
+}
+async function callEdge(fn, body) {
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/${fn}`, { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  return res.json();
+}
+
+// ─── NAV ──────────────────────────────────────────────────────────────────────
+function showPage(p) {
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+  document.getElementById('pg-' + p).classList.add('active');
+}
+function showPinEntry() { document.getElementById('pin-area').style.display = 'block'; document.getElementById('pin-input').focus(); }
+function hidePinEntry() { document.getElementById('pin-area').style.display = 'none'; document.getElementById('pin-err').style.display = 'none'; }
+function checkPin() {
+  if (document.getElementById('pin-input').value === LEADERSHIP_PIN) {
+    hidePinEntry(); document.getElementById('pin-input').value = '';
+    showPage('dashboard'); loadDashboard();
+  } else { document.getElementById('pin-err').style.display = 'block'; }
+}
+function enterManager() { showPage('manager'); initManagerForm(); }
+
+function toast(msg, dur=2800) {
+  const el = document.getElementById('toast'); el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), dur);
+}
+
+// ─── MANAGER FORM ─────────────────────────────────────────────────────────────
+let liCount = 0;
+function initManagerForm() {
+  liCount = 0; document.getElementById('li-rows').innerHTML = '';
+  document.getElementById('m-week').value = new Date().toISOString().split('T')[0];
+  ['m-name','m-email','m-section','k-eff','k-wip','k-def','k-otd','k-del-p','k-del-a','k-bps-p','k-bps-a','k-mtg-p','k-mtg-a','k-eff-n','k-wip-n','k-def-n','k-otd-n','m-bottleneck','m-bal-action','m-bal-result','m-mtg-detail','m-op-issues','m-coaching','m-ci-prob','m-ci-action','m-ci-impact','m-hr-chall','m-hr-action','m-hr-followup','m-esc-detail','m-esc-support','m-well','m-challenges','m-plan'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.querySelectorAll('input[name="huddles"], input[name="esc"]').forEach(el => el.checked = false);
+  addLI(); addLI(); addLI();
+}
+
+function addLI() {
+  const i = liCount++;
+  const d = document.createElement('div'); d.className = 'li-grid-row';
+  d.innerHTML = `<input type="text" placeholder="Line ${i+1}" id="li-l-${i}"><input type="text" placeholder="Key issue" id="li-i-${i}"><input type="text" placeholder="Action taken" id="li-a-${i}"><select id="li-s-${i}"><option value="">Status</option><option>Resolved</option><option>Escalated</option><option>Pending</option></select>`;
+  document.getElementById('li-rows').appendChild(d);
+}
+
+function getR(name) { const el = document.querySelector(`input[name="${name}"]:checked`); return el ? el.value : ''; }
+function fv(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+function fn(id) { const v = parseFloat(document.getElementById(id)?.value); return isNaN(v) ? null : v; }
+
+async function submitEntry() {
+  const name = fv('m-name'), email = fv('m-email'), week = fv('m-week');
+  if (!name || !week) { toast('Please enter your name and week ending date.'); return; }
+
+  const lines = [];
+  for (let i = 0; i < liCount; i++) {
+    const line = fv(`li-l-${i}`);
+    if (line) lines.push({ line, issue: fv(`li-i-${i}`), action: fv(`li-a-${i}`), status: document.getElementById(`li-s-${i}`)?.value || '' });
+  }
+
+  const ciText = [fv('m-ci-prob'), fv('m-ci-action'), fv('m-ci-impact')].join(' ').trim();
+  const leaderText = [fv('m-mtg-detail'), fv('m-op-issues'), fv('m-coaching')].join(' ').trim();
+
+  const payload = {
+    manager_name: name, manager_email: email, section: fv('m-section'), week_ending: week,
+    eff: fn('k-eff'), wip: fn('k-wip'), defect_rate: fn('k-def'), otd: fn('k-otd'),
+    del_planned: fn('k-del-p'), del_actual: fn('k-del-a'),
+    bps_planned: fn('k-bps-p'), bps_actual: fn('k-bps-a'),
+    mtg_planned: fn('k-mtg-p'), mtg_actual: fn('k-mtg-a'),
+    lines: JSON.stringify(lines), huddles: getR('huddles'), escalation: getR('esc'),
+    bottleneck: fv('m-bottleneck'), balance_action: fv('m-bal-action'), balance_result: fv('m-bal-result'),
+    ci_text: ciText, leader_text: leaderText,
+    hr_challenges: fv('m-hr-chall'), hr_actions: fv('m-hr-action'), hr_followup: fv('m-hr-followup'),
+    esc_detail: fv('m-esc-detail'), esc_support: fv('m-esc-support'),
+    reflect_well: fv('m-well'), reflect_challenges: fv('m-challenges'), reflect_plan: fv('m-plan')
+  };
+
+  const btn = document.getElementById('submit-btn');
+  btn.innerHTML = '<span class="spinner"></span>Saving...'; btn.disabled = true;
+  try {
+    await dbInsert('submissions', payload);
+    toast('Report saved. Thank you, ' + name + '!');
+    showPage('login');
+  } catch (e) {
+    toast('Error saving. Check your connection and try again.');
+    console.error(e);
+  } finally { btn.innerHTML = 'Save report'; btn.disabled = false; }
+}
+
+// ─── DASHBOARD ────────────────────────────────────────────────────────────────
+let allEntries = [], managerEmails = [], compChartInst = null, kpiChartInst = null;
+
+async function loadDashboard() {
+  document.getElementById('overview-cards').innerHTML = '<div class="loading-overlay"><span class="spinner"></span>Loading...</div>';
+  try {
+    [allEntries, managerEmails] = await Promise.all([dbGet('submissions'), dbGet('manager_emails')]);
+    renderOverview();
+    renderEmailList();
+    renderSubmissionStatus();
+  } catch (e) {
+    document.getElementById('overview-cards').innerHTML = '<p style="color:var(--red);font-size:13px">Error loading data: ' + e.message + '</p>';
+  }
+}
+
+function dashTab(t) {
+  ['overview','managers','notifications'].forEach(x => {
+    document.getElementById('dv-' + x).style.display = x === t ? '' : 'none';
+    document.getElementById('dt-' + x).classList.toggle('on', x === t);
+  });
+  if (t === 'managers') renderManagers();
+  if (t === 'notifications') { renderEmailList(); renderSubmissionStatus(); }
+}
+
+// ─── SCORING ──────────────────────────────────────────────────────────────────
+function scoreEntry(e) {
+  let kpiScore = 0, kpiCount = 0;
+  if (e.eff !== null) { kpiScore += Math.min((e.eff / 82.5) * 100, 100); kpiCount++; }
+  if (e.wip !== null) { kpiScore += Math.min((2 / Math.max(e.wip, 0.1)) * 100, 100); kpiCount++; }
+  if (e.otd !== null) { kpiScore += Math.min((e.otd / 95) * 100, 100); kpiCount++; }
+  if (e.defect_rate !== null) { kpiScore += Math.max(100 - e.defect_rate * 5, 0); kpiCount++; }
+  const kpiAvg = kpiCount > 0 ? kpiScore / kpiCount : 50;
+  const ciLen = (e.ci_text || '').length;
+  const leaderLen = (e.leader_text || '').length;
+  const actionScore = Math.min(((ciLen + leaderLen) / 400) * 100, 100);
+  return Math.round(kpiAvg * 0.65 + actionScore * 0.35);
+}
+
+function tier(score) {
+  if (score >= 75) return { label: 'Achieving', cls: 'badge-green', av: 'av-green', color: '#2D6A4F', barColor: '#2D6A4F' };
+  if (score >= 50) return { label: 'Developing', cls: 'badge-amber', av: 'av-amber', color: '#7B4F12', barColor: '#D97706' };
+  return { label: 'Needs support', cls: 'badge-red', av: 'av-red', color: '#7B1F1F', barColor: '#DC2626' };
+}
+
+function getManagerSummaries() {
+  const byMgr = {};
+  allEntries.forEach(e => {
+    if (!byMgr[e.manager_name]) byMgr[e.manager_name] = { name: e.manager_name, email: e.manager_email, section: e.section, entries: [] };
+    byMgr[e.manager_name].entries.push(e);
+  });
+  return Object.values(byMgr).map(m => {
+    const sorted = [...m.entries].sort((a, b) => a.week_ending.localeCompare(b.week_ending));
+    const latest = sorted[sorted.length - 1];
+    const scores = sorted.map(scoreEntry);
+    const latestScore = scores[scores.length - 1];
+    const t = tier(latestScore);
+    const strengths = [], weaknesses = [];
+    if (latest.eff !== null) { if (latest.eff >= 80) strengths.push('Efficiency on target'); else weaknesses.push('Efficiency below target'); }
+    if (latest.wip !== null) { if (latest.wip <= 2) strengths.push('WIP under control'); else weaknesses.push('WIP exceeds target'); }
+    if (latest.otd !== null) { if (latest.otd >= 95) strengths.push('On-time delivery strong'); else weaknesses.push('Delivery below 95%'); }
+    if ((latest.ci_text || '').length > 100) strengths.push('Active CI engagement'); else weaknesses.push('CI actions need more depth');
+    if ((latest.leader_text || '').length > 100) strengths.push('Strong team leadership narrative'); else weaknesses.push('Leadership detail needs improvement');
+    if (latest.huddles === 'yes') strengths.push('Consistent morning huddles');
+    return { name: m.name, email: m.email, section: m.section, latestScore, tier: t, scores, weeks: sorted.map(x => x.week_ending), strengths, weaknesses, latest, entries: sorted };
+  });
+}
+
+// ─── OVERVIEW ─────────────────────────────────────────────────────────────────
+function renderOverview() {
+  const mgrs = getManagerSummaries();
+  const achieving = mgrs.filter(m => m.tier.label === 'Achieving').length;
+  const developing = mgrs.filter(m => m.tier.label === 'Developing').length;
+  const needsSupport = mgrs.filter(m => m.tier.label === 'Needs support').length;
+
+  document.getElementById('overview-cards').innerHTML = `
+    <div class="mcard"><div class="ml">Total managers</div><div class="mv">${mgrs.length}</div><div class="ms">with submissions</div></div>
+    <div class="mcard"><div class="ml">Achieving</div><div class="mv" style="color:var(--green)">${achieving}</div><div class="ms">score ≥75</div></div>
+    <div class="mcard"><div class="ml">Developing</div><div class="mv" style="color:var(--amber)">${developing}</div><div class="ms">score 50–74</div></div>
+    <div class="mcard"><div class="ml">Needs support</div><div class="mv" style="color:var(--red)">${needsSupport}</div><div class="ms">score below 50</div></div>`;
+
+  if (compChartInst) { compChartInst.destroy(); compChartInst = null; }
+  if (kpiChartInst) { kpiChartInst.destroy(); kpiChartInst = null; }
+
+  if (mgrs.length > 0) {
+    document.getElementById('comp-legend').innerHTML = `
+      <span><span class="legend-dot" style="background:#2D6A4F"></span>Achieving (≥75)</span>
+      <span><span class="legend-dot" style="background:#D97706"></span>Developing (50–74)</span>
+      <span><span class="legend-dot" style="background:#DC2626"></span>Needs support (&lt;50)</span>`;
+    compChartInst = new Chart(document.getElementById('compChart'), {
+      type: 'bar',
+      data: { labels: mgrs.map(m => m.name.split(' ')[0]), datasets: [{ data: mgrs.map(m => m.latestScore), backgroundColor: mgrs.map(m => m.tier.barColor), borderWidth: 0 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { min: 0, max: 100, ticks: { font: { size: 11, family: 'DM Mono' } } }, x: { ticks: { font: { size: 11 } } } } }
+    });
+
+    const effs = allEntries.map(e => e.eff).filter(v => v !== null);
+    const otds = allEntries.map(e => e.otd).filter(v => v !== null);
+    const wips = allEntries.map(e => e.wip).filter(v => v !== null);
+    const avg = arr => arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length * 10) / 10 : 0;
+    kpiChartInst = new Chart(document.getElementById('kpiChart'), {
+      type: 'bar',
+      data: {
+        labels: ['Efficiency %', 'On-time delivery %', 'WIP / station'],
+        datasets: [
+          { label: 'Team avg', data: [avg(effs), avg(otds), avg(wips)], backgroundColor: '#85B7EB', borderWidth: 0 },
+          { label: 'Target', data: [82.5, 95, 2], backgroundColor: 'rgba(45,106,79,0.2)', borderWidth: 0 }
+        ]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { font: { size: 11, family: 'DM Mono' } } }, x: { ticks: { font: { size: 11 } } } } }
+    });
+    const issueCounts = {};
+    allEntries.forEach(e => {
+      try { (JSON.parse(e.lines || '[]')).forEach(l => { if (l.issue) issueCounts[l.issue] = (issueCounts[l.issue] || 0) + 1; }); } catch {}
+    });
+    const top = Object.entries(issueCounts).sort((a, b) => b[1] - a[1]).slice(0, 8);
+    document.getElementById('issues-list').innerHTML = top.length
+      ? `<div style="display:flex;flex-wrap:wrap">${top.map(([k, v]) => `<span class="pill">${k} <strong style="font-family:var(--mono)">${v}×</strong></span>`).join('')}</div>`
+      : '<p style="font-size:13px;color:var(--text3)">No line issues logged yet.</p>';
+  } else {
+    document.getElementById('comp-legend').innerHTML = '';
+    document.getElementById('issues-list').innerHTML = '<p style="font-size:13px;color:var(--text3)">No submissions yet.</p>';
+  }
+}
+
+// ─── MANAGERS TAB ─────────────────────────────────────────────────────────────
+function renderManagers() {
+  const mgrs = getManagerSummaries();
+  const filter = document.getElementById('mgr-filter').value;
+  const sort = document.getElementById('mgr-sort').value;
+  let filtered = filter === 'all' ? mgrs : mgrs.filter(m => m.tier.label.toLowerCase().replace(' ', '-') === filter);
+  if (sort === 'score-desc') filtered.sort((a, b) => b.latestScore - a.latestScore);
+  else if (sort === 'score-asc') filtered.sort((a, b) => a.latestScore - b.latestScore);
+  else filtered.sort((a, b) => a.name.localeCompare(b.name));
+
+  document.getElementById('mgr-detail-view').style.display = 'none';
+  document.getElementById('mgr-list-view').style.display = '';
+
+  if (!filtered.length) { document.getElementById('mgr-list').innerHTML = '<p style="font-size:13px;color:var(--text3);padding:1rem 0">No managers match this filter.</p>'; return; }
+  document.getElementById('mgr-list').innerHTML = filtered.map(m => `
+    <div class="mgr-card" onclick="showMgrDetail('${m.name.replace(/'/g,"\\'")}')">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="avatar ${m.tier.av}">${m.name.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase()}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span style="font-weight:500;font-size:14px">${m.name}</span>
+            <span class="badge ${m.tier.cls}">${m.tier.label}</span>
+          </div>
+          <div style="font-size:12px;color:var(--text2);margin-top:2px">${m.section || '—'} · ${m.entries.length} week${m.entries.length !== 1 ? 's' : ''} submitted</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:22px;font-weight:300;font-family:var(--mono)">${m.latestScore}</div>
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em">score</div>
+        </div>
+      </div>
+      <div class="score-bar-track"><div class="score-bar-fill" style="width:${m.latestScore}%;background:${m.tier.barColor}"></div></div>
+    </div>`).join('');
+}
+
+function showMgrDetail(name) {
+  const mgrs = getManagerSummaries();
+  const m = mgrs.find(x => x.name === name); if (!m) return;
+  document.getElementById('mgr-list-view').style.display = 'none';
+  const det = document.getElementById('mgr-detail-view'); det.style.display = '';
+  const l = m.latest;
+
+  det.innerHTML = `
+    <button class="btn btn-sm" onclick="document.getElementById('mgr-list-view').style.display='';document.getElementById('mgr-detail-view').style.display='none'" style="margin-bottom:16px">← Back</button>
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+        <div class="avatar ${m.tier.av}" style="width:48px;height:48px;font-size:16px">${m.name.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase()}</div>
+        <div>
+          <div style="font-size:17px;font-weight:500">${m.name}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:2px">${m.section || '—'} · <span class="badge ${m.tier.cls}">${m.tier.label}</span> · Score: <span style="font-family:var(--mono);font-weight:500">${m.latestScore}/100</span></div>
+        </div>
+      </div>
+      <div class="score-bar-track" style="margin-bottom:16px"><div class="score-bar-fill" style="width:${m.latestScore}%;background:${m.tier.barColor}"></div></div>
+      <div class="detail-grid">
+        <div>
+          <div style="font-size:12px;font-weight:500;color:var(--green);margin-bottom:8px">Areas of strength</div>
+          <div>${m.strengths.length ? m.strengths.map(s=>`<span class="pill pill-pos">${s}</span>`).join('') : '<span style="font-size:12px;color:var(--text3)">None identified yet</span>'}</div>
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:500;color:var(--red);margin-bottom:8px">Improvement areas</div>
+          <div>${m.weaknesses.length ? m.weaknesses.map(s=>`<span class="pill pill-neg">${s}</span>`).join('') : '<span style="font-size:12px;color:var(--text3)">None flagged</span>'}</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-label">Latest KPIs — week ending ${l.week_ending}</div>
+      <div class="grid-4" style="margin-top:8px">
+        ${kpiCard('Efficiency','%',l.eff,82.5,false)}
+        ${kpiCard('WIP / station','',l.wip,2,true)}
+        ${kpiCard('Defect rate','%',l.defect_rate,null,true)}
+        ${kpiCard('On-time delivery','%',l.otd,95,false)}
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-label">Score trend (${m.entries.length} weeks)</div>
+      <div style="position:relative;width:100%;height:160px"><canvas id="trend-chart" role="img" aria-label="Score trend for ${m.name}"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="section-label">Latest responses</div>
+      ${narrativeRow('CI & improvement actions', l.ci_text)}
+      ${narrativeRow('Leadership & team engagement', l.leader_text)}
+      ${narrativeRow('Challenges & plan', [l.reflect_challenges, l.reflect_plan].filter(Boolean).join(' | '))}
+    </div>`;
+
+  setTimeout(() => {
+    const ctx = document.getElementById('trend-chart'); if (!ctx) return;
+    new Chart(ctx, {
+      type: 'line',
+      data: { labels: m.weeks, datasets: [{ data: m.scores, borderColor: m.tier.barColor, backgroundColor: m.tier.barColor + '18', tension: 0.3, fill: true, pointRadius: 4, pointBackgroundColor: m.tier.barColor }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { min: 0, max: 100, ticks: { font: { size: 11, family: 'DM Mono' } } }, x: { ticks: { font: { size: 11 }, maxRotation: 30 } } } }
+    });
+  }, 80);
+}
+
+function kpiCard(label, unit, val, target, lowerBetter) {
+  const disp = val !== null && val !== undefined ? val + unit : '—';
+  let color = 'var(--text)';
+  if (val !== null && target !== null) color = (lowerBetter ? val <= target : val >= target) ? 'var(--green)' : 'var(--red)';
+  return `<div class="mcard"><div class="ml">${label}</div><div class="mv" style="color:${color};font-size:20px">${disp}</div>${target !== null ? `<div class="ms">Target: ${lowerBetter ? '≤' : '≥'}${target}${unit}</div>` : ''}</div>`;
+}
+function narrativeRow(label, text) {
+  if (!text || !text.trim()) return `<div style="margin-bottom:12px"><div style="font-size:11px;color:var(--text3);font-weight:500;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px">${label}</div><div style="font-size:13px;color:var(--text3)">Not completed</div></div>`;
+  return `<div style="margin-bottom:12px"><div style="font-size:11px;color:var(--text3);font-weight:500;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px">${label}</div><div style="font-size:13px;line-height:1.7">${text.slice(0,300)}${text.length>300?'…':''}</div></div>`;
+}
+
+// ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
+function renderEmailList() {
+  document.getElementById('mgr-email-list').innerHTML = managerEmails.length
+    ? managerEmails.map(m => `
+      <div class="email-row">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:500">${m.name}</div>
+          <div style="font-size:12px;color:var(--text2)">${m.email}</div>
+        </div>
+        <button class="btn btn-sm btn-danger" onclick="removeEmail('${m.id}')">Remove</button>
+      </div>`).join('')
+    : '<p style="font-size:13px;color:var(--text3)">No managers added yet.</p>';
+}
+
+async function addManagerEmail() {
+  const name = document.getElementById('new-mgr-name').value.trim();
+  const email = document.getElementById('new-mgr-email').value.trim();
+  if (!name || !email) { toast('Enter both name and email.'); return; }
+  try {
+    const res = await dbInsert('manager_emails', { name, email });
+    managerEmails.push(res[0]);
+    document.getElementById('new-mgr-name').value = '';
+    document.getElementById('new-mgr-email').value = '';
+    renderEmailList(); renderSubmissionStatus();
+    toast(name + ' added.');
+  } catch (e) { toast('Error adding email.'); console.error(e); }
+}
+
+async function removeEmail(id) {
+  try {
+    await dbDelete('manager_emails', id);
+    managerEmails = managerEmails.filter(m => m.id !== id);
+    renderEmailList(); toast('Removed.');
+  } catch (e) { toast('Error removing.'); }
+}
+
+function renderSubmissionStatus() {
+  const mgrs = getManagerSummaries();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const statusEl = document.getElementById('submission-status');
+  if (!managerEmails.length && !mgrs.length) { statusEl.innerHTML = '<p style="font-size:13px;color:var(--text3)">Add managers to the email list to track submissions.</p>'; return; }
+  const allNames = [...new Set([...managerEmails.map(m => m.name), ...mgrs.map(m => m.name)])];
+  statusEl.innerHTML = allNames.map(name => {
+    const mgr = mgrs.find(m => m.name === name);
+    let status, dotCls;
+    if (!mgr) { status = { label: 'No submissions', cls: 'badge-gray' }; dotCls = 'dot-amber'; }
+    else {
+      const lastDate = new Date(mgr.latest.week_ending); lastDate.setHours(0,0,0,0);
+      const diff = Math.floor((today - lastDate) / (1000 * 86400));
+      if (diff <= 7) { status = { label: 'Submitted', cls: 'badge-green' }; dotCls = 'dot-green'; }
+      else if (diff <= 14) { status = { label: 'Overdue', cls: 'badge-amber' }; dotCls = 'dot-amber'; }
+      else { status = { label: 'Missing', cls: 'badge-red' }; dotCls = 'dot-red'; }
+    }
+    return `<div class="notif-row"><div style="display:flex;align-items:center;gap:10px"><div class="status-dot ${dotCls}"></div><div><div style="font-size:13px;font-weight:500">${name}</div><div style="font-size:11px;color:var(--text3)">${mgr ? 'Last: ' + mgr.latest.week_ending : 'No report yet'}</div></div></div><span class="badge ${status.cls}">${status.label}</span></div>`;
+  }).join('');
+}
+
+async function sendReminderAll() {
+  const btn = document.getElementById('send-reminder-btn');
+  if (!managerEmails.length) { toast('No managers in email list.'); return; }
+  btn.innerHTML = '<span class="spinner"></span>Sending...'; btn.disabled = true;
+  try {
+    const settings = { reminderDay: document.getElementById('notif-day').value, reminderTime: document.getElementById('notif-time').value, dueDay: document.getElementById('due-day').value };
+    await callEdge('send-reminder', { managers: managerEmails, appUrl: APP_URL, settings });
+    toast('Reminder sent to ' + managerEmails.length + ' manager(s).');
+  } catch (e) { toast('Error sending reminders.'); console.error(e); }
+  finally { btn.innerHTML = 'Send reminder to all'; btn.disabled = false; }
+}
+
+async function sendLateAlert() {
+  const btn = document.getElementById('send-late-btn');
+  const mgrs = getManagerSummaries(); const today = new Date(); today.setHours(0,0,0,0);
+  const overdue = managerEmails.filter(m => {
+    const mgr = mgrs.find(x => x.name === m.name); if (!mgr) return true;
+    const last = new Date(mgr.latest.week_ending); last.setHours(0,0,0,0);
+    return Math.floor((today - last) / (1000 * 86400)) > 7;
+  });
+  if (!overdue.length) { toast('No overdue managers found.'); return; }
+  btn.innerHTML = '<span class="spinner"></span>Sending...'; btn.disabled = true;
+  const leadEmail = document.getElementById('lead-email').value;
+  try {
+    await callEdge('send-reminder', { managers: overdue, appUrl: APP_URL, isLate: true, leadEmail });
+    toast('Late alert sent to ' + overdue.length + ' manager(s).');
+  } catch (e) { toast('Error sending alerts.'); console.error(e); }
+  finally { btn.innerHTML = 'Send late alert to overdue'; btn.disabled = false; }
+}
+
+function saveNotifSettings() {
+  const settings = { day: document.getElementById('notif-day').value, time: document.getElementById('notif-time').value, dueDay: document.getElementById('due-day').value, leadEmail: document.getElementById('lead-email').value };
+  localStorage.setItem('wft_notif_settings', JSON.stringify(settings));
+  const saved = document.getElementById('notif-saved'); saved.style.display = 'block';
+  setTimeout(() => saved.style.display = 'none', 2500);
+}
+
+// Restore saved settings on load
+const savedSettings = JSON.parse(localStorage.getItem('wft_notif_settings') || '{}');
+if (savedSettings.day) document.getElementById('notif-day').value = savedSettings.day;
+if (savedSettings.time) document.getElementById('notif-time').value = savedSettings.time;
+if (savedSettings.dueDay) document.getElementById('due-day').value = savedSettings.dueDay;
+if (savedSettings.leadEmail) document.getElementById('lead-email').value = savedSettings.leadEmail;
+</script>
+</body>
+</html>
