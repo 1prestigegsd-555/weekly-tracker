@@ -299,14 +299,14 @@ textarea{resize:vertical;min-height:64px;line-height:1.6}
               <div class="frow"><label>Reminder time</label><select id="notif-time"><option>07:00</option><option>08:00</option><option selected>09:00</option><option>10:00</option><option>12:00</option></select></div>
               <div class="frow"><label>Report due day</label><select id="due-day"><option value="4">Thursday</option><option value="5" selected>Friday</option><option value="1">Monday</option></select></div>
             </div>
-            <div class="frow"><label>Leadership email (receives late alerts)</label><input type="email" id="lead-email" placeholder="leadership@prestige.co.za"></div>
+            <div class="frow"><label>Your email (optional — for your own records)</label><input type="email" id="lead-email" placeholder="leadership@prestige.co.za"></div>
             <button class="btn btn-primary btn-sm" onclick="saveNotifSettings()">Save settings</button>
             <p id="notif-saved" style="display:none;font-size:12px;color:var(--green);margin-top:8px">Settings saved.</p>
           </div>
           <div class="card">
             <div class="section-label">Email preview — reminder</div>
             <div class="surface" style="font-size:12px;line-height:1.8;color:var(--text2)">
-              <div style="font-weight:700;color:var(--text);margin-bottom:6px">Subject: Reminder — weekly ops report due Friday</div>
+              <div style="background:var(--green-light);color:var(--green);font-size:11px;font-weight:600;padding:6px 10px;border-radius:6px;margin-bottom:10px">Opens your email client (Outlook/Gmail) — no server needed</div><div style="font-weight:700;color:var(--text);margin-bottom:6px">Subject: Reminder — weekly ops report due Friday</div>
               <div>Hi [Manager name],</div>
               <div style="margin-top:6px">Your weekly operations report is due <strong>Friday</strong>. Please complete all sections including KPIs, line issues, and your reflection.</div>
               <div style="margin-top:6px">Submit here: <span style="color:var(--purple)">[tracker link]</span></div>
@@ -328,8 +328,8 @@ textarea{resize:vertical;min-height:64px;line-height:1.6}
             <div class="section-label" style="margin-bottom:12px">Submission status — current week</div>
             <div id="submission-status"></div>
             <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap">
-              <button class="btn btn-sm btn-primary" id="send-reminder-btn" onclick="sendReminderAll()">Send reminder to all</button>
-              <button class="btn btn-sm" id="send-late-btn" onclick="sendLateAlert()">Send late alert to overdue</button>
+              <button class="btn btn-sm btn-primary" id="send-reminder-btn" onclick="sendReminderAll()">Send reminder to all ↗</button>
+              <button class="btn btn-sm" id="send-late-btn" onclick="sendLateAlert()">Send late alert to overdue ↗</button>
             </div>
           </div>
         </div>
@@ -508,19 +508,24 @@ function renderSubmissionStatus(){
     return`<div class="notif-row"><div style="display:flex;align-items:center;gap:10px"><div class="status-dot ${dotCls}"></div><div><div style="font-size:13px;font-weight:600">${name}</div><div style="font-size:11px;color:var(--text3)">${mgr?'Last: '+mgr.latest.week_ending:'No report yet'}</div></div></div><span class="badge ${status.cls}">${status.label}</span></div>`;
   }).join('');
 }
-async function sendReminderAll(){
-  const btn=document.getElementById('send-reminder-btn');if(!managerEmails.length){toast('No managers in email list.');return}
-  btn.innerHTML='<span class="spinner"></span>Sending...';btn.disabled=true;
-  try{const settings={reminderDay:document.getElementById('notif-day').value,dueDay:document.getElementById('due-day').value};await callEdge('send-reminder',{managers:managerEmails,appUrl:APP_URL,settings});toast('Reminder sent to '+managerEmails.length+' manager(s).')}
-  catch(e){toast('Error sending.');console.error(e)}finally{btn.innerHTML='Send reminder to all';btn.disabled=false}
+function sendReminderAll(){
+  if(!managerEmails.length){toast('No managers in email list.');return}
+  const dueDay=['','Monday','Tuesday','Wednesday','Thursday','Friday'][document.getElementById('due-day').value]||'Friday';
+  const to=managerEmails.map(m=>m.email).join(',');
+  const subject=encodeURIComponent('Reminder — weekly ops report due '+dueDay);
+  const body=encodeURIComponent('Hi [Name],\n\nThis is a reminder that your weekly operations report is due by end of day '+dueDay+'.\n\nPlease complete all sections including:\n- KPI actuals vs targets\n- Line issues and actions taken\n- Leadership & team engagement\n- Continuous improvement\n- Reflection & next steps\n\nSubmit here: '+APP_URL+'\n\n— Prestige Clothing operations leadership');
+  window.open('mailto:'+to+'?subject='+subject+'&body='+body);
+  toast('Email client opened for '+managerEmails.length+' recipient(s).');
 }
-async function sendLateAlert(){
-  const btn=document.getElementById('send-late-btn');const mgrs=getMgrs();const today=new Date();today.setHours(0,0,0,0);
+function sendLateAlert(){
+  const mgrs=getMgrs();const today=new Date();today.setHours(0,0,0,0);
   const overdue=managerEmails.filter(m=>{const mgr=mgrs.find(x=>x.name===m.name);if(!mgr)return true;const ld=new Date(mgr.latest.week_ending);ld.setHours(0,0,0,0);return Math.floor((today-ld)/(1000*86400))>7});
   if(!overdue.length){toast('No overdue managers found.');return}
-  btn.innerHTML='<span class="spinner"></span>Sending...';btn.disabled=true;
-  try{await callEdge('send-reminder',{managers:overdue,appUrl:APP_URL,isLate:true,leadEmail:document.getElementById('lead-email').value});toast('Late alert sent to '+overdue.length+' manager(s).')}
-  catch(e){toast('Error sending.');console.error(e)}finally{btn.innerHTML='Send late alert to overdue';btn.disabled=false}
+  const to=overdue.map(m=>m.email).join(',');
+  const subject=encodeURIComponent('Action required — your weekly ops report is overdue');
+  const body=encodeURIComponent('Hi [Name],\n\nYour weekly operations report is overdue. Please submit it as soon as possible.\n\nSubmit here: '+APP_URL+'\n\n— Prestige Clothing operations leadership');
+  window.open('mailto:'+to+'?subject='+subject+'&body='+body);
+  toast('Email client opened for '+overdue.length+' overdue manager(s).');
 }
 function saveNotifSettings(){
   localStorage.setItem('wft_notif',JSON.stringify({day:document.getElementById('notif-day').value,time:document.getElementById('notif-time').value,dueDay:document.getElementById('due-day').value,leadEmail:document.getElementById('lead-email').value}));
