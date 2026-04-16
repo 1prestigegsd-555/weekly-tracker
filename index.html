@@ -99,6 +99,13 @@ textarea{resize:vertical;min-height:64px;line-height:1.6}
 .topbar-btn:hover{background:rgba(255,255,255,0.15)}
 .prestige-logo{display:flex;align-items:center;gap:10px}
 .prestige-logo-text{color:#fff;font-size:13px;font-weight:300;letter-spacing:0.12em;text-transform:uppercase;opacity:0.9}
+.field-error{border-color:#dc2626!important;background:#fdf0f1!important}
+.field-error:focus{border-color:#dc2626!important}
+.error-msg{font-size:11px;color:#7a1e1e;margin-top:3px;display:none}
+.error-msg.show{display:block}
+.trend-up{color:#1e5c3a;font-size:12px;font-weight:700;font-family:var(--mono)}
+.trend-down{color:#7a1e1e;font-size:12px;font-weight:700;font-family:var(--mono)}
+.trend-flat{color:var(--text3);font-size:12px;font-weight:700;font-family:var(--mono)}
 .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.6s linear infinite;vertical-align:middle;margin-right:6px}
 .spinner-dark{border-color:var(--border-med);border-top-color:var(--purple)}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -161,11 +168,11 @@ textarea{resize:vertical;min-height:64px;line-height:1.6}
     <div class="card">
       <div class="section-label">Your details</div>
       <div class="grid-3">
-        <div class="frow"><label>Full name *</label><input type="text" id="m-name" placeholder="Your name"></div>
+        <div class="frow"><label>Full name *</label><input type="text" id="m-name" placeholder="Your name" oninput="clearErr('m-name')"><div id="err-m-name" class="error-msg">Please enter your name</div></div>
         <div class="frow"><label>Email address</label><input type="email" id="m-email" placeholder="you@prestige.co.za"></div>
         <div class="frow"><label>Section / BU *</label><input type="text" id="m-section" placeholder="e.g. Assembly A"></div>
       </div>
-      <div class="frow" style="max-width:200px"><label>Week ending *</label><input type="date" id="m-week"></div>
+      <div class="frow" style="max-width:200px"><label>Week ending *</label><input type="date" id="m-week" onchange="clearErr('m-week')"><div id="err-m-week" class="error-msg">Please select a week ending date</div></div>
     </div>
     <div class="card">
       <div class="section-label">KPIs</div>
@@ -355,6 +362,7 @@ function initManagerForm(){
   document.getElementById('m-week').value=new Date().toISOString().split('T')[0];
   ['m-name','m-email','m-section','k-eff','k-wip','k-def','k-otd','k-del-p','k-del-a','k-bps-p','k-bps-a','k-mtg-p','k-mtg-a','k-eff-n','k-wip-n','k-def-n','k-otd-n','m-bottleneck','m-bal-action','m-bal-result','m-mtg-detail','m-op-issues','m-coaching','m-ci-prob','m-ci-action','m-ci-impact','m-hr-chall','m-hr-action','m-hr-followup','m-esc-detail','m-esc-support','m-well','m-challenges','m-plan'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});
   document.querySelectorAll('input[name="huddles"],input[name="esc"]').forEach(el=>el.checked=false);
+  ['m-name','m-week'].forEach(id=>clearErr(id));
   addLI();addLI();addLI();
 }
 function addLI(){const i=liCount++;const d=document.createElement('div');d.className='li-grid-row';d.id='li-row-'+i;d.innerHTML=`<input type="text" placeholder="Line ${i+1}" id="li-l-${i}"><input type="text" placeholder="Key issue" id="li-i-${i}"><input type="text" placeholder="Action taken" id="li-a-${i}"><select id="li-s-${i}"><option value="">Status</option><option>Resolved</option><option>Escalated</option><option>Pending</option></select><button class="li-del" onclick="deleteLI(${i})" title="Remove line">✕</button>`;document.getElementById('li-rows').appendChild(d)}
@@ -362,9 +370,29 @@ function deleteLI(i){const el=document.getElementById('li-row-'+i);if(el)el.remo
 function getR(n){const el=document.querySelector(`input[name="${n}"]:checked`);return el?el.value:''}
 function fv(id){const el=document.getElementById(id);return el?el.value.trim():''}
 function fn(id){const v=parseFloat(document.getElementById(id)?.value);return isNaN(v)?null:v}
+function clearErr(id){
+  const el=document.getElementById(id);if(el)el.classList.remove('field-error');
+  const em=document.getElementById('err-'+id);if(em)em.classList.remove('show');
+}
+function showErr(id,msg){
+  const el=document.getElementById(id);if(el)el.classList.add('field-error');
+  const em=document.getElementById('err-'+id);if(em){em.textContent=msg||em.textContent;em.classList.add('show');}
+}
 async function submitEntry(){
   const name=fv('m-name'),week=fv('m-week');
-  if(!name||!week){toast('Please enter your name and week ending date.');return}
+  let valid=true;
+  if(!name){showErr('m-name');valid=false}
+  if(!week){showErr('m-week');valid=false}
+  if(!valid){
+    document.getElementById('m-name').scrollIntoView({behavior:'smooth',block:'center'});
+    return;
+  }
+  // Duplicate submission check
+  const existingForWeek=allEntries.filter(e=>e.manager_name===name&&e.week_ending===week);
+  if(existingForWeek.length>0){
+    const confirmed=window.confirm('You have already submitted a report for the week ending '+week+'.\n\nDo you want to submit again and overwrite it?');
+    if(!confirmed)return;
+  }
   const lines=[];
   for(let i=0;i<liCount;i++){const line=fv(`li-l-${i}`);if(line)lines.push({line,issue:fv(`li-i-${i}`),action:fv(`li-a-${i}`),status:document.getElementById(`li-s-${i}`)?.value||''})}
   const ciText=[fv('m-ci-prob'),fv('m-ci-action'),fv('m-ci-impact')].join(' ').trim();
@@ -409,7 +437,11 @@ function getMgrs(){
     if((latest.ci_text||'').length>100)str.push('Active CI engagement');else wk.push('CI actions need more depth');
     if((latest.leader_text||'').length>100)str.push('Strong team leadership');else wk.push('Leadership detail needs improvement');
     if(latest.huddles==='yes')str.push('Consistent morning huddles');
-    return{name:m.name,email:m.email,section:m.section,latestScore:ls,tier:t,scores,weeks:sorted.map(x=>x.week_ending),strengths:str,weaknesses:wk,latest,entries:sorted};
+    const prevScore=scores.length>=2?scores[scores.length-2]:null;
+    const trendVal=prevScore!==null?ls-prevScore:null;
+    const trendLabel=trendVal===null?'':(trendVal>0?'↑ +'+trendVal:(trendVal<0?'↓ '+trendVal:'→ 0'));
+    const trendCls=trendVal===null?'':(trendVal>0?'trend-up':trendVal<0?'trend-down':'trend-flat');
+    return{name:m.name,email:m.email,section:m.section,latestScore:ls,tier:t,scores,weeks:sorted.map(x=>x.week_ending),strengths:str,weaknesses:wk,latest,entries:sorted,trendVal,trendLabel,trendCls};
   });
 }
 function renderOverview(){
@@ -434,7 +466,7 @@ function renderManagers(){
   if(s==='score-desc')fil.sort((a,b)=>b.latestScore-a.latestScore);else if(s==='score-asc')fil.sort((a,b)=>a.latestScore-b.latestScore);else fil.sort((a,b)=>a.name.localeCompare(b.name));
   document.getElementById('mgr-detail-view').style.display='none';document.getElementById('mgr-list-view').style.display='';
   if(!fil.length){document.getElementById('mgr-list').innerHTML='<p style="font-size:13px;color:var(--text3);padding:1rem 0">No managers match this filter.</p>';return}
-  document.getElementById('mgr-list').innerHTML=fil.map(m=>`<div class="mgr-card" onclick="showMgrDetail('${m.name.replace(/'/g,"\\'")}')"><div style="display:flex;align-items:center;gap:12px"><div class="avatar ${m.tier.av}">${m.name.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase()}</div><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-weight:700;font-size:14px">${m.name}</span><span class="badge ${m.tier.cls}">${m.tier.label}</span></div><div style="font-size:12px;color:var(--text2);margin-top:2px">${m.section||'—'} · ${m.entries.length} week${m.entries.length!==1?'s':''} submitted</div></div><div style="text-align:right;flex-shrink:0"><div style="font-size:22px;font-weight:300;font-family:var(--mono);color:var(--purple)">${m.latestScore}</div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em">score</div></div></div><div class="score-bar-track"><div class="score-bar-fill" style="width:${m.latestScore}%;background:${m.tier.barColor}"></div></div></div>`).join('');
+  document.getElementById('mgr-list').innerHTML=fil.map(m=>`<div class="mgr-card" onclick="showMgrDetail('${m.name.replace(/'/g,"\\'")}')"><div style="display:flex;align-items:center;gap:12px"><div class="avatar ${m.tier.av}">${m.name.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase()}</div><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-weight:700;font-size:14px">${m.name}</span><span class="badge ${m.tier.cls}">${m.tier.label}</span></div><div style="font-size:12px;color:var(--text2);margin-top:2px">${m.section||'—'} · ${m.entries.length} week${m.entries.length!==1?'s':''} submitted</div></div><div style="text-align:right;flex-shrink:0"><div style="font-size:22px;font-weight:300;font-family:var(--mono);color:var(--purple)">${m.latestScore}</div><div style="display:flex;align-items:center;justify-content:flex-end;gap:5px;margin-top:2px"><span class="${m.trendCls}" style="font-size:11px">${m.trendLabel}</span><span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em">${m.trendLabel?'':'score'}</span></div></div></div><div class="score-bar-track"><div class="score-bar-fill" style="width:${m.latestScore}%;background:${m.tier.barColor}"></div></div></div>`).join('');
 }
 function showMgrDetail(name){
   const mgrs=getMgrs();const m=mgrs.find(x=>x.name===name);if(!m)return;
