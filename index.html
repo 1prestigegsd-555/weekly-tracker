@@ -397,7 +397,7 @@ async function submitEntry(){
   for(let i=0;i<liCount;i++){const line=fv(`li-l-${i}`);if(line)lines.push({line,issue:fv(`li-i-${i}`),action:fv(`li-a-${i}`),status:document.getElementById(`li-s-${i}`)?.value||''})}
   const ciText=[fv('m-ci-prob'),fv('m-ci-action'),fv('m-ci-impact')].join(' ').trim();
   const leaderText=[fv('m-mtg-detail'),fv('m-op-issues'),fv('m-coaching')].join(' ').trim();
-  const payload={manager_name:name,manager_email:fv('m-email'),section:fv('m-section'),week_ending:week,eff:fn('k-eff'),wip:fn('k-wip'),defect_rate:fn('k-def'),otd:fn('k-otd'),del_planned:fn('k-del-p'),del_actual:fn('k-del-a'),bps_planned:fn('k-bps-p'),bps_actual:fn('k-bps-a'),mtg_planned:fn('k-mtg-p'),mtg_actual:fn('k-mtg-a'),lines:JSON.stringify(lines),huddles:getR('huddles'),escalation:getR('esc'),bottleneck:fv('m-bottleneck'),balance_action:fv('m-bal-action'),balance_result:fv('m-bal-result'),ci_text:ciText,leader_text:leaderText,hr_challenges:fv('m-hr-chall'),hr_actions:fv('m-hr-action'),hr_followup:fv('m-hr-followup'),esc_detail:fv('m-esc-detail'),esc_support:fv('m-esc-support'),reflect_well:fv('m-well'),reflect_challenges:fv('m-challenges'),reflect_plan:fv('m-plan')};
+  const payload={manager_name:name,manager_email:fv('m-email'),section:fv('m-section'),week_ending:week,eff:fn('k-eff'),wip:fn('k-wip'),defect_rate:fn('k-def'),otd:fn('k-otd'),del_planned:fn('k-del-p'),del_actual:fn('k-del-a'),bps_planned:fn('k-bps-p'),bps_actual:fn('k-bps-a'),mtg_planned:fn('k-mtg-p'),mtg_actual:fn('k-mtg-a'),lines:JSON.stringify(lines),huddles:getR('huddles'),escalation:getR('esc'),bottleneck:fv('m-bottleneck'),balance_action:fv('m-bal-action'),balance_result:fv('m-bal-result'),ci_text:ciText,leader_text:leaderText,ci_problems:fv('m-ci-prob'),ci_actions:fv('m-ci-action'),ci_impact:fv('m-ci-impact'),mtg_detail:fv('m-mtg-detail'),op_issues:fv('m-op-issues'),coaching:fv('m-coaching'),hr_challenges:fv('m-hr-chall'),hr_actions:fv('m-hr-action'),hr_followup:fv('m-hr-followup'),esc_detail:fv('m-esc-detail'),esc_support:fv('m-esc-support'),reflect_well:fv('m-well'),reflect_challenges:fv('m-challenges'),reflect_plan:fv('m-plan')};
   const btn=document.getElementById('submit-btn');btn.innerHTML='<span class="spinner"></span>Saving...';btn.disabled=true;
   try{await dbInsert('submissions',payload);toast('Report saved. Thank you, '+name+'!');showPage('login')}
   catch(e){toast('Error saving. Please try again.');console.error(e)}
@@ -468,16 +468,158 @@ function renderManagers(){
   if(!fil.length){document.getElementById('mgr-list').innerHTML='<p style="font-size:13px;color:var(--text3);padding:1rem 0">No managers match this filter.</p>';return}
   document.getElementById('mgr-list').innerHTML=fil.map(m=>`<div class="mgr-card" onclick="showMgrDetail('${m.name.replace(/'/g,"\\'")}')"><div style="display:flex;align-items:center;gap:12px"><div class="avatar ${m.tier.av}">${m.name.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase()}</div><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-weight:700;font-size:14px">${m.name}</span><span class="badge ${m.tier.cls}">${m.tier.label}</span></div><div style="font-size:12px;color:var(--text2);margin-top:2px">${m.section||'—'} · ${m.entries.length} week${m.entries.length!==1?'s':''} submitted</div></div><div style="text-align:right;flex-shrink:0"><div style="font-size:22px;font-weight:300;font-family:var(--mono);color:var(--purple)">${m.latestScore}</div><div style="display:flex;align-items:center;justify-content:flex-end;gap:5px;margin-top:2px"><span class="${m.trendCls}" style="font-size:11px">${m.trendLabel}</span><span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em">${m.trendLabel?'':'score'}</span></div></div></div><div class="score-bar-track"><div class="score-bar-fill" style="width:${m.latestScore}%;background:${m.tier.barColor}"></div></div></div>`).join('');
 }
-function showMgrDetail(name){
-  const mgrs=getMgrs();const m=mgrs.find(x=>x.name===name);if(!m)return;
-  document.getElementById('mgr-list-view').style.display='none';const det=document.getElementById('mgr-detail-view');det.style.display='';const l=m.latest;
-  det.innerHTML=`<button class="btn btn-sm" onclick="document.getElementById('mgr-list-view').style.display='';document.getElementById('mgr-detail-view').style.display='none'" style="margin-bottom:16px">← Back</button>
-    <div class="card"><div style="display:flex;align-items:center;gap:14px;margin-bottom:16px"><div class="avatar ${m.tier.av}" style="width:48px;height:48px;font-size:16px">${m.name.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase()}</div><div><div style="font-size:17px;font-weight:700">${m.name}</div><div style="font-size:12px;color:var(--text2);margin-top:2px">${m.section||'—'} · <span class="badge ${m.tier.cls}">${m.tier.label}</span> · Score: <span style="font-family:var(--mono);color:var(--purple)">${m.latestScore}/100</span></div></div></div><div class="score-bar-track" style="margin-bottom:16px"><div class="score-bar-fill" style="width:${m.latestScore}%;background:${m.tier.barColor}"></div></div><div class="detail-grid"><div><div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">Areas of strength</div><div>${m.strengths.length?m.strengths.map(s=>`<span class="pill pill-pos">${s}</span>`).join(''):'<span style="font-size:12px;color:var(--text3)">None identified yet</span>'}</div></div><div><div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">Improvement areas</div><div>${m.weaknesses.length?m.weaknesses.map(s=>`<span class="pill pill-neg">${s}</span>`).join(''):'<span style="font-size:12px;color:var(--text3)">None flagged</span>'}</div></div></div></div>
-    <div class="card"><div class="section-label">Latest KPIs — week ending ${l.week_ending}</div><div class="grid-4" style="margin-top:8px">${kpiCard('Efficiency','%',l.eff,82.5,false)}${kpiCard('WIP / station','',l.wip,2,true)}${kpiCard('Defect rate','%',l.defect_rate,null,true)}${kpiCard('On-time delivery','%',l.otd,95,false)}</div></div>
-    <div class="card"><div class="section-label">Score trend (${m.entries.length} week${m.entries.length!==1?'s':''})</div><div style="position:relative;width:100%;height:160px"><canvas id="trend-chart" role="img" aria-label="Score trend"></canvas></div></div>
-    <div class="card"><div class="section-label">Latest responses</div>${nRow('CI & improvement actions',l.ci_text)}${nRow('Leadership & engagement',l.leader_text)}${nRow('Challenges & plan',[l.reflect_challenges,l.reflect_plan].filter(Boolean).join(' | '))}</div>`;
-  setTimeout(()=>{const ctx=document.getElementById('trend-chart');if(!ctx)return;new Chart(ctx,{type:'line',data:{labels:m.weeks,datasets:[{data:m.scores,borderColor:m.tier.barColor,backgroundColor:m.tier.barColor+'22',tension:0.3,fill:true,pointRadius:4,pointBackgroundColor:m.tier.barColor}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{min:0,max:100,ticks:{font:{size:11}}},x:{ticks:{font:{size:11},maxRotation:30}}}}})},80);
+function nSection(title){return`<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--purple-75);margin:16px 0 8px;padding-bottom:6px;border-bottom:2px solid var(--purple-25)">${title}</div>`}
+function nField(label,value){
+  if(!value||!value.toString().trim())return`<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--text3);font-weight:600;margin-bottom:2px">${label}</div><div style="font-size:13px;color:var(--text3);font-style:italic">Not completed</div></div>`;
+  return`<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--text2);font-weight:600;margin-bottom:2px">${label}</div><div style="font-size:13px;line-height:1.7;color:var(--text)">${value}</div></div>`;
 }
+function nFieldBox(label,value,cls){
+  const bg=cls==='pos'?'var(--green-light)':cls==='neg'?'var(--red-light)':cls==='warn'?'var(--amber-light)':'var(--surface2)';
+  const border=cls==='pos'?'var(--green)':cls==='neg'?'var(--red)':cls==='warn'?'var(--amber)':'var(--border-med)';
+  if(!value||!value.toString().trim())return nField(label,value);
+  return`<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--text2);font-weight:600;margin-bottom:4px">${label}</div><div style="font-size:13px;line-height:1.7;background:${bg};border-left:3px solid ${border};padding:8px 12px;border-radius:0 6px 6px 0">${value}</div></div>`;
+}
+function weekSelector(entries,currentIdx,mgrName){
+  if(entries.length<=1)return'';
+  return`<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    <span style="font-size:12px;color:var(--text2);font-weight:600">Week:</span>
+    ${entries.map((e,i)=>`<button onclick="showWeekDetail('${mgrName.replace(/'/g,"\'")}',${i})" style="padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid ${i===currentIdx?'var(--purple)':'var(--border-med)'};background:${i===currentIdx?'var(--purple)':'transparent'};color:${i===currentIdx?'#fff':'var(--text2)'}">${e.week_ending}</button>`).join('')}
+  </div>`;
+}
+function showWeekDetail(name,weekIdx){
+  const mgrs=getMgrs();const m=mgrs.find(x=>x.name===name);if(!m)return;
+  const idx=weekIdx!==undefined?weekIdx:m.entries.length-1;
+  const l=m.entries[idx];
+  const sc=m.scores[idx];
+  const t=tier(sc);
+  document.getElementById('mgr-list-view').style.display='none';
+  const det=document.getElementById('mgr-detail-view');det.style.display='';
+
+  let lines=[];try{lines=JSON.parse(l.lines||'[]')}catch{}
+  const linesHtml=lines.length?`<table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:6px">
+    <thead><tr style="background:var(--surface2)">
+      <th style="padding:7px 10px;text-align:left;font-size:11px;color:var(--text2);font-weight:700;border-bottom:1px solid var(--border)">Line</th>
+      <th style="padding:7px 10px;text-align:left;font-size:11px;color:var(--text2);font-weight:700;border-bottom:1px solid var(--border)">Key issue</th>
+      <th style="padding:7px 10px;text-align:left;font-size:11px;color:var(--text2);font-weight:700;border-bottom:1px solid var(--border)">Action taken</th>
+      <th style="padding:7px 10px;text-align:left;font-size:11px;color:var(--text2);font-weight:700;border-bottom:1px solid var(--border)">Status</th>
+    </tr></thead>
+    <tbody>${lines.map(li=>{
+      const sc=li.status==='Resolved'?'color:#1e5c3a;background:#d3f0de':li.status==='Escalated'?'color:#7a1e1e;background:#fadadd':'color:#7a4a0e;background:#fdecc8';
+      return`<tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:7px 10px;font-weight:600">${li.line||'—'}</td>
+        <td style="padding:7px 10px">${li.issue||'—'}</td>
+        <td style="padding:7px 10px">${li.action||'—'}</td>
+        <td style="padding:7px 10px"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;${sc}">${li.status||'—'}</span></td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`:'<div style="font-size:13px;color:var(--text3);font-style:italic">No line issues logged</div>';
+
+  det.innerHTML=`
+    <button class="btn btn-sm" onclick="document.getElementById('mgr-list-view').style.display='';document.getElementById('mgr-detail-view').style.display='none'" style="margin-bottom:16px">← Back to list</button>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px">
+        <div class="avatar ${t.av}" style="width:48px;height:48px;font-size:16px">${l.manager_name.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase()}</div>
+        <div style="flex:1">
+          <div style="font-size:17px;font-weight:700">${l.manager_name}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:2px">${l.section||'—'} · <span class="badge ${t.cls}">${t.label}</span> · Score: <span style="font-family:var(--mono);color:var(--purple);font-weight:500">${sc}/100</span></div>
+        </div>
+      </div>
+      <div class="score-bar-track" style="margin-bottom:14px"><div class="score-bar-fill" style="width:${sc}%;background:${t.barColor}"></div></div>
+      ${weekSelector(m.entries,idx,m.name)}
+      <div class="detail-grid">
+        <div><div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">Areas of strength</div><div>${m.strengths.length?m.strengths.map(s=>`<span class="pill pill-pos">${s}</span>`).join(''):'<span style="font-size:12px;color:var(--text3)">None identified yet</span>'}</div></div>
+        <div><div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">Improvement areas</div><div>${m.weaknesses.length?m.weaknesses.map(s=>`<span class="pill pill-neg">${s}</span>`).join(''):'<span style="font-size:12px;color:var(--text3)">None flagged</span>'}</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">KPIs — week ending ${l.week_ending}</div>
+      <div class="grid-4" style="margin-top:8px">
+        ${kpiCard('Efficiency','%',l.eff,82.5,false)}${kpiCard('WIP / station','',l.wip,2,true)}${kpiCard('Defect rate','%',l.defect_rate,null,true)}${kpiCard('On-time delivery','%',l.otd,95,false)}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px">
+        <div class="mcard" style="border-left-color:var(--blue-brand)"><div class="ml">Deliveries</div><div style="font-size:14px;font-family:var(--mono);color:var(--blue-brand);margin-top:4px">${l.del_actual||'—'} <span style="font-size:11px;color:var(--text3)">/ ${l.del_planned||'—'} planned</span></div></div>
+        <div class="mcard" style="border-left-color:var(--blue-brand)"><div class="ml">BPS submissions</div><div style="font-size:14px;font-family:var(--mono);color:var(--blue-brand);margin-top:4px">${l.bps_actual||'—'} <span style="font-size:11px;color:var(--text3)">/ ${l.bps_planned||'—'} planned</span></div></div>
+        <div class="mcard" style="border-left-color:var(--blue-brand)"><div class="ml">Focused meetings</div><div style="font-size:14px;font-family:var(--mono);color:var(--blue-brand);margin-top:4px">${l.mtg_actual||'—'} <span style="font-size:11px;color:var(--text3)">/ ${l.mtg_planned||'—'} planned</span></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Score trend (${m.entries.length} week${m.entries.length!==1?'s':''})</div>
+      <div style="position:relative;width:100%;height:150px"><canvas id="trend-chart" role="img" aria-label="Score trend"></canvas></div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Line issues</div>
+      <div style="margin-top:6px">${linesHtml}</div>
+    </div>
+
+    <div class="card">
+      ${nSection('Line balancing & WIP')}
+      <div class="detail-grid">
+        ${nFieldBox('Observed bottlenecks',l.bottleneck,'warn')}
+        ${nField('Actions taken to balance line',l.balance_action)}
+      </div>
+      ${nField('Results achieved',l.balance_result)}
+    </div>
+
+    <div class="card">
+      ${nSection('Leadership & team engagement')}
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px">
+        <span style="font-size:12px;font-weight:600;color:var(--text2)">Morning huddles:</span>
+        <span class="badge ${l.huddles==='yes'?'badge-green':'badge-red'}">${l.huddles==='yes'?'✓ Conducted':'✗ Not conducted'}</span>
+      </div>
+      <div class="detail-grid">
+        ${nField('Focused meeting topics & outcomes',l.mtg_detail||l.leader_text)}
+        ${nField('Key operator issues raised',l.op_issues)}
+      </div>
+      ${nField('Coaching provided to module leaders/operators',l.coaching)}
+    </div>
+
+    <div class="card">
+      ${nSection('Continuous improvement')}
+      ${nField('Problems solved & tools used',l.ci_problems||l.ci_text)}
+      <div class="detail-grid">
+        ${nField('Improvement actions implemented',l.ci_actions)}
+        ${nField('Impact observed',l.ci_impact)}
+      </div>
+    </div>
+
+    <div class="card">
+      ${nSection('People / HR challenges')}
+      ${nFieldBox('Challenges encountered',l.hr_challenges,l.hr_challenges?'warn':'')}
+      <div class="detail-grid">
+        ${nField('Actions taken',l.hr_actions)}
+        ${nField('Follow-up required',l.hr_followup)}
+      </div>
+    </div>
+
+    <div class="card">
+      ${nSection('Escalation & support')}
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px">
+        <span style="font-size:12px;font-weight:600;color:var(--text2)">Assistance required:</span>
+        <span class="badge ${l.escalation==='yes'?'badge-red':'badge-green'}">${l.escalation==='yes'?'⚠ Yes':'✓ No'}</span>
+      </div>
+      ${nFieldBox('Issue & outcome',l.esc_detail,l.escalation==='yes'?'neg':'')}
+      ${nFieldBox('Additional support needed from leadership',l.esc_support,l.esc_support?'neg':'')}
+    </div>
+
+    <div class="card">
+      ${nSection('Reflection & next steps')}
+      <div class="detail-grid">
+        ${nFieldBox('What worked well',l.reflect_well,'pos')}
+        ${nFieldBox('Challenges faced',l.reflect_challenges,'warn')}
+      </div>
+      ${nFieldBox('Plan for next week',l.reflect_plan,'pos')}
+    </div>`;
+
+  setTimeout(()=>{
+    const ctx=document.getElementById('trend-chart');if(!ctx)return;
+    new Chart(ctx,{type:'line',data:{labels:m.weeks,datasets:[{data:m.scores,borderColor:t.barColor,backgroundColor:t.barColor+'22',tension:0.3,fill:true,pointRadius:5,pointBackgroundColor:m.weeks.map((_,i)=>i===idx?'#fff':t.barColor),pointBorderColor:m.weeks.map((_,i)=>i===idx?t.barColor:t.barColor),pointBorderWidth:m.weeks.map((_,i)=>i===idx?3:1)}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{min:0,max:100,ticks:{font:{size:11}}},x:{ticks:{font:{size:11},maxRotation:30}}}}});
+  },80);
+}
+function showMgrDetail(name){showWeekDetail(name,undefined)}
 function kpiCard(label,unit,val,target,lb){
   const disp=val!==null&&val!==undefined?val+unit:'—';
   let color='var(--text)';if(val!==null&&target!==null)color=(lb?val<=target:val>=target)?'var(--green)':'var(--red)';
