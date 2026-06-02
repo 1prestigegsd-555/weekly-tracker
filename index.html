@@ -229,7 +229,7 @@ textarea{resize:vertical;min-height:64px;line-height:1.6}
       <div class="frow"><label>Plan for next week</label><textarea id="m-plan" placeholder="Priorities and planned actions..."></textarea></div>
     </div>
     <div style="padding:0.5rem 0 3rem">
-      <div id="draft-status" style="display:none;font-size:12px;color:var(--green);background:var(--green-light);border:1px solid #a8d5b5;padding:8px 14px;border-radius:var(--radius);margin-bottom:12px;display:flex;align-items:center;gap:8px">
+      <div id="draft-status" style="display:none;font-size:12px;color:var(--green);background:var(--green-light);border:1px solid #a8d5b5;padding:8px 14px;border-radius:var(--radius);margin-bottom:12px;align-items:center;gap:8px">
         <span style="font-size:14px">✓</span>
         <span id="draft-status-text">Draft saved</span>
         <button onclick="clearDraft()" style="margin-left:auto;font-size:11px;color:var(--red);background:none;border:none;cursor:pointer;font-family:var(--font);text-decoration:underline">Clear draft</button>
@@ -432,7 +432,7 @@ function clearDraft(){
 function showDraftStatus(msg){
   const el=document.getElementById('draft-status');
   const txt=document.getElementById('draft-status-text');
-  if(el){el.style.display='flex';if(txt)txt.textContent=msg}
+  if(el){el.style.display='flex';el.style.alignItems='center';el.style.gap='8px';if(txt)txt.textContent=msg}
 }
 function hideDraftStatus(){
   const el=document.getElementById('draft-status');if(el)el.style.display='none';
