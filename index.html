@@ -382,9 +382,7 @@ function initManagerForm(){
     const name=this.value.trim();if(!name)return;
     const draft=getDraft(name);
     if(draft){
-      const restore=window.confirm('A saved draft was found for "'+name+'" from '+draft.savedAt+'.
-
-Would you like to restore it?');
+      const restore=window.confirm('A saved draft was found for "'+name+'" from '+draft.savedAt+'.\n\nWould you like to restore it?');
       if(restore)restoreDraft(draft);
     }
   },{once:true});
