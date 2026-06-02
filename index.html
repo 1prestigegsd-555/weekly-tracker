@@ -228,9 +228,19 @@ textarea{resize:vertical;min-height:64px;line-height:1.6}
       <div class="frow"><label>Challenges faced</label><textarea id="m-challenges" placeholder="What was difficult..."></textarea></div>
       <div class="frow"><label>Plan for next week</label><textarea id="m-plan" placeholder="Priorities and planned actions..."></textarea></div>
     </div>
-    <div style="display:flex;justify-content:flex-end;gap:10px;padding:0.5rem 0 3rem">
-      <button class="btn" onclick="showPage('login')">Cancel</button>
-      <button class="btn btn-primary" id="submit-btn" onclick="submitEntry()">Save report</button>
+    <div style="padding:0.5rem 0 3rem">
+      <div id="draft-status" style="display:none;font-size:12px;color:var(--green);background:var(--green-light);border:1px solid #a8d5b5;padding:8px 14px;border-radius:var(--radius);margin-bottom:12px;display:flex;align-items:center;gap:8px">
+        <span style="font-size:14px">✓</span>
+        <span id="draft-status-text">Draft saved</span>
+        <button onclick="clearDraft()" style="margin-left:auto;font-size:11px;color:var(--red);background:none;border:none;cursor:pointer;font-family:var(--font);text-decoration:underline">Clear draft</button>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <button class="btn" onclick="showPage('login')">Cancel</button>
+        <div style="display:flex;gap:10px">
+          <button class="btn" id="draft-btn" onclick="saveDraft()" style="border-color:var(--purple-50);color:var(--purple)">Save draft</button>
+          <button class="btn btn-primary" id="submit-btn" onclick="submitEntry()">Submit report</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -357,13 +367,75 @@ function checkPin(){if(document.getElementById('pin-input').value===LEADERSHIP_P
 function enterManager(){showPage('manager');initManagerForm()}
 function toast(msg,dur=2800){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),dur)}
 let liCount=0;
+const FORM_FIELDS=['m-name','m-email','m-section','m-week','k-eff','k-wip','k-def','k-otd','k-del-p','k-del-a','k-bps-p','k-bps-a','k-mtg-p','k-mtg-a','k-eff-n','k-wip-n','k-def-n','k-otd-n','m-bottleneck','m-bal-action','m-bal-result','m-mtg-detail','m-op-issues','m-coaching','m-ci-prob','m-ci-action','m-ci-impact','m-hr-chall','m-hr-action','m-hr-followup','m-esc-detail','m-esc-support','m-well','m-challenges','m-plan'];
+
 function initManagerForm(){
   liCount=0;document.getElementById('li-rows').innerHTML='';
   document.getElementById('m-week').value=new Date().toISOString().split('T')[0];
-  ['m-name','m-email','m-section','k-eff','k-wip','k-def','k-otd','k-del-p','k-del-a','k-bps-p','k-bps-a','k-mtg-p','k-mtg-a','k-eff-n','k-wip-n','k-def-n','k-otd-n','m-bottleneck','m-bal-action','m-bal-result','m-mtg-detail','m-op-issues','m-coaching','m-ci-prob','m-ci-action','m-ci-impact','m-hr-chall','m-hr-action','m-hr-followup','m-esc-detail','m-esc-support','m-well','m-challenges','m-plan'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});
+  FORM_FIELDS.forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});
   document.querySelectorAll('input[name="huddles"],input[name="esc"]').forEach(el=>el.checked=false);
   ['m-name','m-week'].forEach(id=>clearErr(id));
+  hideDraftStatus();
   addLI();addLI();addLI();
+  // Check for draft on name entry
+  document.getElementById('m-name').addEventListener('blur',function(){
+    const name=this.value.trim();if(!name)return;
+    const draft=getDraft(name);
+    if(draft){
+      const restore=window.confirm('A saved draft was found for "'+name+'" from '+draft.savedAt+'.
+
+Would you like to restore it?');
+      if(restore)restoreDraft(draft);
+    }
+  },{once:true});
+}
+
+function getDraftKey(name){return'wft_draft_'+name.toLowerCase().replace(/\s+/g,'_')}
+function getDraft(name){
+  try{const d=localStorage.getItem(getDraftKey(name));return d?JSON.parse(d):null}catch{return null}
+}
+function saveDraft(){
+  const name=fv('m-name');
+  if(!name){showErr('m-name','Please enter your name before saving a draft');return}
+  const lines=[];
+  for(let i=0;i<liCount;i++){const line=fv('li-l-'+i);if(line)lines.push({line,issue:fv('li-i-'+i),action:fv('li-a-'+i),status:document.getElementById('li-s-'+i)?.value||''})}
+  const draft={savedAt:new Date().toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}),fields:{},radios:{huddles:getR('huddles'),esc:getR('esc')},lines};
+  FORM_FIELDS.forEach(id=>{const el=document.getElementById(id);if(el)draft.fields[id]=el.value});
+  localStorage.setItem(getDraftKey(name),JSON.stringify(draft));
+  showDraftStatus('Draft saved at '+draft.savedAt);
+  toast('Draft saved — you can safely close this page and return later.');
+}
+function restoreDraft(draft){
+  // Restore text fields
+  FORM_FIELDS.forEach(id=>{const el=document.getElementById(id);if(el&&draft.fields[id]!==undefined)el.value=draft.fields[id]});
+  // Restore radios
+  if(draft.radios.huddles){const el=document.querySelector(`input[name="huddles"][value="${draft.radios.huddles}"]`);if(el)el.checked=true}
+  if(draft.radios.esc){const el=document.querySelector(`input[name="esc"][value="${draft.radios.esc}"]`);if(el)el.checked=true}
+  // Restore line issues
+  document.getElementById('li-rows').innerHTML='';liCount=0;
+  if(draft.lines&&draft.lines.length){
+    draft.lines.forEach(l=>{
+      const i=liCount++;const d=document.createElement('div');d.className='li-grid-row';d.id='li-row-'+i;
+      d.innerHTML=`<input type="text" placeholder="Line ${i+1}" id="li-l-${i}" value="${l.line||''}"><input type="text" placeholder="Key issue" id="li-i-${i}" value="${l.issue||''}"><input type="text" placeholder="Action taken" id="li-a-${i}" value="${l.action||''}"><select id="li-s-${i}"><option value="">Status</option><option${l.status==='Resolved'?' selected':''}>Resolved</option><option${l.status==='Escalated'?' selected':''}>Escalated</option><option${l.status==='Pending'?' selected':''}>Pending</option></select><button class="li-del" onclick="deleteLI(${i})" title="Remove line">✕</button>`;
+      document.getElementById('li-rows').appendChild(d);
+    });
+  } else {addLI();addLI();addLI()}
+  showDraftStatus('Draft restored from '+draft.savedAt);
+  toast('Draft restored successfully.');
+}
+function clearDraft(){
+  const name=fv('m-name');
+  if(name)localStorage.removeItem(getDraftKey(name));
+  hideDraftStatus();
+  toast('Draft cleared.');
+}
+function showDraftStatus(msg){
+  const el=document.getElementById('draft-status');
+  const txt=document.getElementById('draft-status-text');
+  if(el){el.style.display='flex';if(txt)txt.textContent=msg}
+}
+function hideDraftStatus(){
+  const el=document.getElementById('draft-status');if(el)el.style.display='none';
 }
 function addLI(){const i=liCount++;const d=document.createElement('div');d.className='li-grid-row';d.id='li-row-'+i;d.innerHTML=`<input type="text" placeholder="Line ${i+1}" id="li-l-${i}"><input type="text" placeholder="Key issue" id="li-i-${i}"><input type="text" placeholder="Action taken" id="li-a-${i}"><select id="li-s-${i}"><option value="">Status</option><option>Resolved</option><option>Escalated</option><option>Pending</option></select><button class="li-del" onclick="deleteLI(${i})" title="Remove line">✕</button>`;document.getElementById('li-rows').appendChild(d)}
 function deleteLI(i){const el=document.getElementById('li-row-'+i);if(el)el.remove()}
@@ -399,9 +471,9 @@ async function submitEntry(){
   const leaderText=[fv('m-mtg-detail'),fv('m-op-issues'),fv('m-coaching')].join(' ').trim();
   const payload={manager_name:name,manager_email:fv('m-email'),section:fv('m-section'),week_ending:week,eff:fn('k-eff'),wip:fn('k-wip'),defect_rate:fn('k-def'),otd:fn('k-otd'),del_planned:fn('k-del-p'),del_actual:fn('k-del-a'),bps_planned:fn('k-bps-p'),bps_actual:fn('k-bps-a'),mtg_planned:fn('k-mtg-p'),mtg_actual:fn('k-mtg-a'),lines:JSON.stringify(lines),huddles:getR('huddles'),escalation:getR('esc'),bottleneck:fv('m-bottleneck'),balance_action:fv('m-bal-action'),balance_result:fv('m-bal-result'),ci_text:ciText,leader_text:leaderText,ci_problems:fv('m-ci-prob'),ci_actions:fv('m-ci-action'),ci_impact:fv('m-ci-impact'),mtg_detail:fv('m-mtg-detail'),op_issues:fv('m-op-issues'),coaching:fv('m-coaching'),hr_challenges:fv('m-hr-chall'),hr_actions:fv('m-hr-action'),hr_followup:fv('m-hr-followup'),esc_detail:fv('m-esc-detail'),esc_support:fv('m-esc-support'),reflect_well:fv('m-well'),reflect_challenges:fv('m-challenges'),reflect_plan:fv('m-plan')};
   const btn=document.getElementById('submit-btn');btn.innerHTML='<span class="spinner"></span>Saving...';btn.disabled=true;
-  try{await dbInsert('submissions',payload);toast('Report saved. Thank you, '+name+'!');showPage('login')}
+  try{await dbInsert('submissions',payload);localStorage.removeItem(getDraftKey(name));toast('Report submitted successfully. Thank you, '+name+'!');showPage('login')}
   catch(e){toast('Error saving. Please try again.');console.error(e)}
-  finally{btn.innerHTML='Save report';btn.disabled=false}
+  finally{btn.innerHTML='Submit report';btn.disabled=false}
 }
 let allEntries=[],managerEmails=[],compCI=null,kpiCI=null;
 async function loadDashboard(){
